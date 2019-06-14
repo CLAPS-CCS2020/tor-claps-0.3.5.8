@@ -480,6 +480,33 @@ kb_to_bytes(uint32_t bw)
   return (bw > (INT32_MAX/1000)) ? INT32_MAX : bw*1000;
 }
 
+
+/** /!\ This code makes sense only for shadow experimentation.
+ * Any real implementation would need to receive weights
+ * from authorities in another fashion /!\ */
+
+/** Each function should load pre-computed weights
+ * knowing what topology we experiment in shadow
+ */
+static const node_t *
+smartlist_choose_node_as_lastor(const smartlist_t *sl,
+                                bandwidth_weight_rule_t rule)
+{
+  return NULL;
+}
+static const node_t *a
+smartlist_choose_node_as_denasa(const smartlist_t *sl,
+                                bandwidth_weight_rule_t rule)
+{
+  return NULL;
+}
+static const node_t *
+smartlist_choose_node_as_counterRaptor(const smartlist_t *sl,
+                                bandwidth_weight_rule_t rule)
+{
+  return NULL;
+}
+
 /** Helper function:
  * choose a random element of smartlist <b>sl</b> of nodes, weighted by
  * the advertised bandwidth of each element using the consensus
@@ -800,8 +827,19 @@ frac_nodes_with_descriptors(const smartlist_t *sl,
 const node_t *
 node_sl_choose_by_bandwidth(const smartlist_t *sl,
                             bandwidth_weight_rule_t rule)
-{ /*XXXX MOVE */
-  return smartlist_choose_node_by_bandwidth_weights(sl, rule);
+{ 
+  if (get_options()->ClientUseLastor) {
+    return smartlist_choose_node_as_lastor(sl, rule)
+  }
+  else if (get_options()->ClientUseDenasa) {
+    return smartlist_choose_node_as_denasa(sl, rule);
+  }
+  else if (get_options()->ClientUseCounterRaptor) {
+    return smartlist_choose_node_as_counterRaptor(sl, rule)
+  }
+  else {
+    return smartlist_choose_node_by_bandwidth_weights(sl, rule);
+  }
 }
 
 /** Given a <b>router</b>, add every node_t in its family (including the
