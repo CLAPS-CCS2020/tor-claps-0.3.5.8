@@ -659,6 +659,13 @@ struct or_options_t {
    * connections. If auto, bridge clients prefer IPv6, and other clients
    * prefer IPv4. Use node_ipv6_or_preferred() instead of accessing this value
    * directly. */
+
+  int ClientUseLastor;
+
+  int ClientUseDenasa;
+
+  int ClientUseCounterRaptor;
+
   int ClientPreferIPv6ORPort;
   /** If true, prefer an IPv6 directory port over an IPv4 one for direct
    * directory connections. If auto, bridge clients prefer IPv6, and other
