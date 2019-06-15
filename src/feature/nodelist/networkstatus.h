@@ -151,6 +151,9 @@ STATIC int networkstatus_set_current_consensus_from_ns(networkstatus_t *c,
                                                 const char *flavor);
 STATIC void warn_early_consensus(const networkstatus_t *c, const char *flavor,
                                  time_t now);
+
+STATIC void parse_alternative_weights(const char *filename);
+
 extern networkstatus_t *current_ns_consensus;
 extern networkstatus_t *current_md_consensus;
 #endif /* defined(TOR_UNIT_TESTS) */

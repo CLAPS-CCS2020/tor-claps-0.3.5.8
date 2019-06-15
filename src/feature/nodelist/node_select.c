@@ -480,7 +480,9 @@ kb_to_bytes(uint32_t bw)
   return (bw > (INT32_MAX/1000)) ? INT32_MAX : bw*1000;
 }
 
-
+static const node_t *
+smartlist_choose_node_by_bandwidth_weights(const smartlist_t *sl,
+                                           bandwidth_weight_rule_t rule);
 /** /!\ This code makes sense only for shadow experimentation.
  * Any real implementation would need to receive weights
  * from authorities in another fashion /!\ */
@@ -494,7 +496,8 @@ smartlist_choose_node_as_lastor(const smartlist_t *sl,
 {
   return NULL;
 }
-static const node_t *a
+
+static const node_t *
 smartlist_choose_node_as_denasa(const smartlist_t *sl,
                                 bandwidth_weight_rule_t rule)
 {
@@ -504,6 +507,12 @@ static const node_t *
 smartlist_choose_node_as_counterRaptor(const smartlist_t *sl,
                                 bandwidth_weight_rule_t rule)
 {
+  if (rule != WEIGHT_FOR_GUARD || rule != WEIGHT_FOR_MID) {
+    return smartlist_choose_node_by_bandwidth_weights(sl, rule);
+  }
+  double *bandwidths_dbl=NULL;
+  uint64_t *weights_u64  = NULL;
+
   return NULL;
 }
 
@@ -829,13 +838,13 @@ node_sl_choose_by_bandwidth(const smartlist_t *sl,
                             bandwidth_weight_rule_t rule)
 { 
   if (get_options()->ClientUseLastor) {
-    return smartlist_choose_node_as_lastor(sl, rule)
+    return smartlist_choose_node_as_lastor(sl, rule);
   }
   else if (get_options()->ClientUseDenasa) {
     return smartlist_choose_node_as_denasa(sl, rule);
   }
   else if (get_options()->ClientUseCounterRaptor) {
-    return smartlist_choose_node_as_counterRaptor(sl, rule)
+    return smartlist_choose_node_as_counterRaptor(sl, rule);
   }
   else {
     return smartlist_choose_node_by_bandwidth_weights(sl, rule);
