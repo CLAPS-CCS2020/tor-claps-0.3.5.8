@@ -504,6 +504,12 @@ static const node_t *
 smartlist_choose_node_as_counterRaptor(const smartlist_t *sl,
                                 bandwidth_weight_rule_t rule)
 {
+  if (rule != WEIGHT_FOR_GUARD || rule != WEIGHT_FOR_MIDDLE) {
+    return smartlist_choose_node_by_bandwidth_weights(sl, rule);
+  }
+  double *bandwidths_dbl=NULL;
+  uint64_t *weights_u64  = NULL;
+
   return NULL;
 }
 

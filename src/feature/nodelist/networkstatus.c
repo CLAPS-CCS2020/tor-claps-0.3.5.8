@@ -1821,8 +1821,8 @@ warn_early_consensus(const networkstatus_t *c, const char *flavor,
 }
 
 static bool
-parse_line_info(char *line, char **fingerprint, uint32_t* alt_weight,
-    uint32_t this_location) {
+parse_line_info(char *line, char **fingerprint, uint32_t* alt_weight_g,
+    uint32_t* alt_weight_m, uint32_t this_location) {
   char *token = strsep(&line, "_");
   /** token shoud contain location_fingerprint */
   if (!token) {
@@ -1839,10 +1839,15 @@ parse_line_info(char *line, char **fingerprint, uint32_t* alt_weight,
   *fingerprint = tor_strdup(token);
   token = strsep(&line, " ");
   if (!token) {
-    log_debug(LD_GENERAL, "Parsing issue, no weight");
+    log_debug(LD_GENERAL, "Parsing issue, no guard weight");
   }
   tor_assert(token);
-  *alt_weight = atoi(token);
+  *alt_weight_g = atoi(token);
+  token = strsep(&line, " ");
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no middle weight");
+  }
+  *alt_weight_m = atoi(token);
   return true;
 }
 
@@ -1855,15 +1860,18 @@ parse_alternative_weights(char *filename) {
   bool ok;
   size_t len = 0;
   char *fingerprint = NULL;
-  uint32_t alternative_weight;
+  uint32_t alternative_weight_g;
+  uint32_t alternative_weight_m;
   uint32_t our_location = get_options()->location;
   while (ok && (read = getline(&line, &len, file)) != -1) {
-    ok = parse_line_info(line, &fingerprint, &alternative_weight, location);
+    ok = parse_line_info(line, &fingerprint, &alternative_weight_g,
+        alternative_weight_m, location);
     if (ok) {
       /** modify router's info for alternative_weight */
       node_t *node = node_get_mutable_by_id(fingerprint);
       tor_assert(node);
-      node->rs->alternative_weight = alternative_weight; 
+      node->rs->alternative_weight_g = alternative_weight_g; 
+      node->rs->alternative_weight_m = alternative_weight_m; 
     }
   }
 }

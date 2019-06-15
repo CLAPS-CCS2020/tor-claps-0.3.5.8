@@ -59,8 +59,8 @@ struct routerstatus_t {
   uint32_t bandwidth_kb; /**< Bandwidth (capacity) of the router as reported in
                        * the vote/consensus, in kilobytes/sec. */
   
-  uint32_t alternative_weight; /** should contain the alternative weight we give to this
-                                 router for the other path selections we experiment */
+  uint32_t alternative_weight_g; /** should contain the alternative weight we give to this */
+  uint32_t alternative_weight_m; /**    router for the other path selections we experiment */
 
   /** The consensus has guardfraction information for this router. */
   unsigned int has_guardfraction:1;
