@@ -99,6 +99,8 @@
 #include "feature/dirauth/vote_microdesc_hash_st.h"
 #include "feature/nodelist/vote_routerstatus_st.h"
 
+#include <stdio.h>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -1818,6 +1820,54 @@ warn_early_consensus(const networkstatus_t *c, const char *flavor,
   tor_free(flavormsg);
 }
 
+static bool
+parse_line_info(char *line, char **fingerprint, uint32_t* alt_weight,
+    uint32_t this_location) {
+  char *token = strsep(&line, "_");
+  /** token shoud contain location_fingerprint */
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no location");
+  }
+  tor_assert(token);
+  if (this_location != atoi(token))
+    return false;
+  token = strsep(&line, " ");
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no fingerprint");
+  }
+  tor_assert(token);
+  *fingerprint = tor_strdup(token);
+  token = strsep(&line, " ");
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no weight");
+  }
+  tor_assert(token);
+  *alt_weight = atoi(token);
+  return true;
+}
+
+static void
+parse_alternative_weights(char *filename) {
+  
+  FILE *file = fopen(filename, "r");
+  ssize_t read;
+  char *line = NULL;
+  bool ok;
+  size_t len = 0;
+  char *fingerprint = NULL;
+  uint32_t alternative_weight;
+  uint32_t our_location = get_options()->location;
+  while (ok && (read = getline(&line, &len, file)) != -1) {
+    ok = parse_line_info(line, &fingerprint, &alternative_weight, location);
+    if (ok) {
+      /** modify router's info for alternative_weight */
+      node_t *node = node_get_mutable_by_id(fingerprint);
+      tor_assert(node);
+      node->rs->alternative_weight = alternative_weight; 
+    }
+  }
+}
+
 /** Try to replace the current cached v3 networkstatus with the one in
  * <b>consensus</b>.  If we don't have enough certificates to validate it,
  * store it in consensus_waiting_for_certs and launch a certificate fetch.
@@ -1874,6 +1924,14 @@ networkstatus_set_current_consensus(const char *consensus,
     log_warn(LD_DIR, "Unable to parse networkstatus consensus");
     result = -2;
     goto done;
+  }
+  /** 
+   * Hijack this function to load special weights as well-- would work fine for
+   * shadow experiments only
+   */
+  if (get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
+      get_options()->ClientUseCounterRaptor) {
+    parse_alternative_weights("alternative_weights");
   }
 
   if (from_cache && !was_waiting_for_certs) {
