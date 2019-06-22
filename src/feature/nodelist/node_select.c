@@ -483,6 +483,10 @@ kb_to_bytes(uint32_t bw)
 static const node_t *
 smartlist_choose_node_by_bandwidth_weights(const smartlist_t *sl,
                                            bandwidth_weight_rule_t rule);
+static int
+compute_alternative_bandwidths(const smartlist_t *sl,
+                                 bandwidth_weight_rule_t rule,
+                                 double **weights_out);
 /** /!\ This code makes sense only for shadow experimentation.
  * Any real implementation would need to receive weights
  * from authorities in another fashion /!\ */
@@ -501,19 +505,36 @@ static const node_t *
 smartlist_choose_node_as_denasa(const smartlist_t *sl,
                                 bandwidth_weight_rule_t rule)
 {
+  /** do we do e-select? */
+  if (rule != WEIGHT_FOR_GUARD && rule != WEIGHT_FOR_MID) {
+    return smartlist_choose_node_by_bandwidth_weights(sl, rule);
+  }
+
+
   return NULL;
 }
 static const node_t *
 smartlist_choose_node_as_counterRaptor(const smartlist_t *sl,
                                 bandwidth_weight_rule_t rule)
 {
-  if (rule != WEIGHT_FOR_GUARD || rule != WEIGHT_FOR_MID) {
+  if (rule != WEIGHT_FOR_GUARD) {
     return smartlist_choose_node_by_bandwidth_weights(sl, rule);
   }
   double *bandwidths_dbl=NULL;
   uint64_t *weights_u64  = NULL;
-
-  return NULL;
+  
+  if (compute_alternative_bandwidths(sl, rule, &bandwidths_dbl) < 0)
+    return NULL;
+  
+  weights_u64 = tor_calloc(smartlist_len(sl), sizeof(uint64_t));
+  scale_array_elements_to_u64(weights_u64, bandwidths_dbl,
+                              smartlist_len(sl), NULL);
+  
+  int idx = choose_array_element_by_weight(weights_u64,
+                                           smartlist_len(sl));
+  tor_free(bandwidths_dbl);
+  tor_free(weights_u64);
+  return idx < 0 ? NULL : smartlist_get(sl, idx);
 }
 
 /** Helper function:
@@ -574,6 +595,46 @@ bridge_get_advertised_bandwidth_bounded(routerinfo_t *router)
   else if (result < BRIDGE_MIN_BELIEVABLE_BANDWIDTH)
     result = BRIDGE_MIN_BELIEVABLE_BANDWIDTH;
   return result;
+}
+
+
+static int
+compute_alternative_bandwidths(const smartlist_t *sl,
+                                 bandwidth_weight_rule_t rule,
+                                 double **weights_out)
+{
+  double *weights = NULL;
+  tor_assert(sl);
+
+  if (smartlist_len(sl) == 0) {
+    log_info(LD_CIRC,
+             "Empty routerlist passed in to consensus weight node ");
+    return -1;
+  }
+  
+  *weights_out = NULL;
+  weights = tor_calloc(smartlist_len(sl), sizeof(double));
+
+  SMARTLIST_FOREACH_BEGIN(sl, const node_t *, node) {
+
+    if (rule == WEIGHT_FOR_GUARD) {
+      weights[node_sl_idx] = node->rs->alternative_weight_g;
+    }
+    else if (rule == WEIGHT_FOR_MID) {
+      weights[node_sl_idx] = node->rs->alternative_weight_m;
+    }
+    else if (rule == WEIGHT_FOR_EXIT) {
+      weights[node_sl_idx] = node->rs->alternative_weight_e;
+    }
+    else {
+      return -1;
+    }
+
+  } SMARTLIST_FOREACH_END(node);
+  
+  *weights_out = weights;
+
+  return 0;
 }
 
 /** Given a list of routers and a weighting rule as in
