@@ -1861,8 +1861,8 @@ parse_line_info(char *line, char **name, uint32_t* alt_weight_g,
  *
  * FIXME: handle LASTor case (i.e., weights depends on previous hop)
  */
-
-STATIC void
+ 
+void
 parse_alternative_weights(const char *filename) {
   
   FILE *file = fopen(filename, "r");
