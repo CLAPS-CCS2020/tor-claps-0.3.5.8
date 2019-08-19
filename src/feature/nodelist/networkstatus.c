@@ -1868,23 +1868,36 @@ parse_alternative_weights(const char *filename) {
   FILE *file = fopen(filename, "r");
   ssize_t read;
   char *line = NULL;
-  bool ok;
+  int ok = 2;
+  bool found;
   size_t len = 0;
-  char *fingerprint = NULL;
+  char *name = NULL;
   uint32_t alternative_weight_g;
   uint32_t alternative_weight_m;
   uint32_t alternative_weight_e;
   int our_location = get_options()->location;
+  /**
+   * parse the file until we find our location, parse all line of our location
+   * file and then get out of this
+   */
   while (ok && (read = getline(&line, &len, file)) != -1) {
-    ok = parse_line_info(line, &fingerprint, &alternative_weight_g,
+    found = parse_line_info(line, &name, &alternative_weight_g,
         &alternative_weight_m, &alternative_weight_e, our_location);
-    if (ok) {
+    if (found) {
+      if (ok == 2)
+        ok--;
       /** modify router's info for alternative_weight */
-      node_t *node = node_get_mutable_by_id(fingerprint);
+      node_t *node = (node_t *)node_get_by_nickname(name, NNF_NO_WARN_UNNAMED);
       tor_assert(node);
       node->rs->alternative_weight_g = alternative_weight_g; 
       node->rs->alternative_weight_m = alternative_weight_m; 
       node->rs->alternative_weight_e = alternative_weight_e;
+    }
+    /** 
+     * it means we can exit the loop
+     */
+    if (ok == 1 && !found) {
+      ok--;
     }
   }
 }
@@ -1952,7 +1965,7 @@ networkstatus_set_current_consensus(const char *consensus,
    */
   if (get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
       get_options()->ClientUseCounterRaptor) {
-    log_warn(LD_GENERAL, "Parsing alternative weights")
+    log_warn(LD_GENERAL, "Parsing alternative weights");
     parse_alternative_weights("alternative_weights");
   }
 
