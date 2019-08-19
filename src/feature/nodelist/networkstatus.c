@@ -1952,6 +1952,7 @@ networkstatus_set_current_consensus(const char *consensus,
    */
   if (get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
       get_options()->ClientUseCounterRaptor) {
+    log_warn(LD_GENERAL, "Parsing alternative weights")
     parse_alternative_weights("alternative_weights");
   }
 
