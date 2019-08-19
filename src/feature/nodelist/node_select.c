@@ -598,10 +598,15 @@ bridge_get_advertised_bandwidth_bounded(routerinfo_t *router)
 }
 
 
+/**
+ * Get the weight loaded from the file for any 
+ * bandwidth_weight_rule_t
+ */
+
 static int
 compute_alternative_bandwidths(const smartlist_t *sl,
-                                 bandwidth_weight_rule_t rule,
-                                 double **weights_out)
+                               bandwidth_weight_rule_t rule,
+                               double **weights_out)
 {
   double *weights = NULL;
   tor_assert(sl);
@@ -611,7 +616,7 @@ compute_alternative_bandwidths(const smartlist_t *sl,
              "Empty routerlist passed in to consensus weight node ");
     return -1;
   }
-  
+
   *weights_out = NULL;
   weights = tor_calloc(smartlist_len(sl), sizeof(double));
 
