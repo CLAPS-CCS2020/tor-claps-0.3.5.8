@@ -145,6 +145,8 @@ void vote_routerstatus_free_(vote_routerstatus_t *rs);
 #define vote_routerstatus_free(rs) \
   FREE_AND_NULL(vote_routerstatus_t, vote_routerstatus_free_, (rs))
 
+void parse_alternative_weights(const char *filename);
+
 #ifdef NETWORKSTATUS_PRIVATE
 #ifdef TOR_UNIT_TESTS
 STATIC int networkstatus_set_current_consensus_from_ns(networkstatus_t *c,
@@ -152,7 +154,6 @@ STATIC int networkstatus_set_current_consensus_from_ns(networkstatus_t *c,
 STATIC void warn_early_consensus(const networkstatus_t *c, const char *flavor,
                                  time_t now);
 
-void parse_alternative_weights(const char *filename);
 
 extern networkstatus_t *current_ns_consensus;
 extern networkstatus_t *current_md_consensus;

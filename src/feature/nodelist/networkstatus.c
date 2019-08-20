@@ -105,6 +105,10 @@
 #include <unistd.h>
 #endif
 
+
+static int weight_parsed = 0;
+
+
 /** Most recently received and validated v3 "ns"-flavored consensus network
  * status. */
 STATIC networkstatus_t *current_ns_consensus = NULL;
@@ -1963,9 +1967,14 @@ networkstatus_set_current_consensus(const char *consensus,
    * Hijack this function to load special weights as well-- would work fine for
    * shadow experiments only
    */
-  if (get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
-      get_options()->ClientUseCounterRaptor) {
+  int num_present = 0, num_usable=0;
+  if ((get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
+      get_options()->ClientUseCounterRaptor) && 
+      (int) compute_frac_paths_available(c, get_options(), time(NULL),
+                                   &num_present, &num_usable, NULL) == 100 &&
+      !weight_parsed) {
     log_warn(LD_GENERAL, "Parsing alternative weights");
+    weight_parsed = 1;
     parse_alternative_weights("alternative_weights");
   }
 

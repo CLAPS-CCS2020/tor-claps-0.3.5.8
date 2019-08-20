@@ -118,6 +118,13 @@ void router_set_status(const char *digest, int up);
 int addrs_in_same_network_family(const tor_addr_t *a1,
                                  const tor_addr_t *a2);
 
+double
+compute_frac_paths_available(const networkstatus_t *consensus,
+                             const or_options_t *options, time_t now,
+                             int *num_present_out, int *num_usable_out,
+                             char **status_out);
+
+
 /** router_have_minimum_dir_info tests to see if we have enough
  * descriptor information to create circuits.
  * If there are exits in the consensus, we wait until we have enough
