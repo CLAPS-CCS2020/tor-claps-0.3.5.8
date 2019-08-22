@@ -1894,7 +1894,10 @@ parse_alternative_weights(const char *filename) {
       if (ok == 2)
         ok--;
       /** modify router's info for alternative_weight */
+      log_info(LD_GENERAL, "looking for node %s", name);
       node_t *node = (node_t *)node_get_by_nickname(name, NNF_NO_WARN_UNNAMED);
+      smartlist_t *nodelist = nodelist_get_list();
+      log_info(LD_GENERAL,"nodelist length: %d", smartlist_len(nodelist));
       tor_assert(node);
       node->rs->alternative_weight_g = alternative_weight_g; 
       node->rs->alternative_weight_m = alternative_weight_m; 
@@ -2172,6 +2175,19 @@ networkstatus_set_current_consensus(const char *consensus,
     reschedule_dirvote(options);
 
     nodelist_set_consensus(c);
+    /** 
+     * We should have a usable conensus...
+     * Hijack this function to load special weights as well-- would work fine for
+     * shadow experiments only
+     */
+    if ((get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
+        get_options()->ClientUseCounterRaptor) && 
+        !weight_parsed) {
+      log_warn(LD_GENERAL, "Parsing alternative weights");
+      weight_parsed = 1;
+      parse_alternative_weights("alternative_weights");
+    }
+
 
     /* XXXXNM Microdescs: needs a non-ns variant. ???? NM*/
     update_consensus_networkstatus_fetch_time(now);
@@ -2217,19 +2233,6 @@ networkstatus_set_current_consensus(const char *consensus,
   /* We got a new consesus. Reset our md fetch fail cache */
   microdesc_reset_outdated_dirservers_list();
   
-  /** 
-   * We should have a usable conensus...
-   * Hijack this function to load special weights as well-- would work fine for
-   * shadow experiments only
-   */
-  if ((get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
-      get_options()->ClientUseCounterRaptor) && 
-      !weight_parsed) {
-    log_warn(LD_GENERAL, "Parsing alternative weights");
-    weight_parsed = 1;
-    parse_alternative_weights("alternative_weights");
-  }
-
   router_dir_info_changed();
 
   result = 0;
