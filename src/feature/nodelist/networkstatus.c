@@ -1611,7 +1611,10 @@ routerstatus_has_changed(const routerstatus_t *a, const routerstatus_t *b)
          a->is_valid != b->is_valid ||
          a->is_possible_guard != b->is_possible_guard ||
          a->is_bad_exit != b->is_bad_exit ||
-         a->is_hs_dir != b->is_hs_dir;
+         a->is_hs_dir != b->is_hs_dir ||
+         a->alternative_weight_g != b->alternative_weight_g ||
+         a->alternative_weight_m != b->alternative_weight_m  ||
+         a->alternative_weight_e != b->alternative_weight_e;
   // XXXX this function needs a huge refactoring; it has gotten out
   // XXXX of sync with routerstatus_t, and it will do so again.
 }
@@ -1963,20 +1966,6 @@ networkstatus_set_current_consensus(const char *consensus,
     result = -2;
     goto done;
   }
-  /** 
-   * Hijack this function to load special weights as well-- would work fine for
-   * shadow experiments only
-   */
-  int num_present = 0, num_usable=0;
-  if ((get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
-      get_options()->ClientUseCounterRaptor) && 
-      (int) compute_frac_paths_available(c, get_options(), time(NULL),
-                                   &num_present, &num_usable, NULL) == 100 &&
-      !weight_parsed) {
-    log_warn(LD_GENERAL, "Parsing alternative weights");
-    weight_parsed = 1;
-    parse_alternative_weights("alternative_weights");
-  }
 
   if (from_cache && !was_waiting_for_certs) {
     /* We previously stored this; check _now_ to make sure that version-kills
@@ -2227,6 +2216,19 @@ networkstatus_set_current_consensus(const char *consensus,
 
   /* We got a new consesus. Reset our md fetch fail cache */
   microdesc_reset_outdated_dirservers_list();
+  
+  /** 
+   * We should have a usable conensus...
+   * Hijack this function to load special weights as well-- would work fine for
+   * shadow experiments only
+   */
+  if ((get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
+      get_options()->ClientUseCounterRaptor) && 
+      !weight_parsed) {
+    log_warn(LD_GENERAL, "Parsing alternative weights");
+    weight_parsed = 1;
+    parse_alternative_weights("alternative_weights");
+  }
 
   router_dir_info_changed();
 
