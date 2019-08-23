@@ -1896,8 +1896,6 @@ parse_alternative_weights(const char *filename) {
       /** modify router's info for alternative_weight */
       log_info(LD_GENERAL, "looking for node %s", name);
       node_t *node = (node_t *)node_get_by_nickname(name, NNF_NO_WARN_UNNAMED);
-      smartlist_t *nodelist = nodelist_get_list();
-      log_info(LD_GENERAL,"nodelist length: %d", smartlist_len(nodelist));
       tor_assert(node);
       node->rs->alternative_weight_g = alternative_weight_g; 
       node->rs->alternative_weight_m = alternative_weight_m; 
