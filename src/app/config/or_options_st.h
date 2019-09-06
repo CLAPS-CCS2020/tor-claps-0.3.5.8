@@ -665,9 +665,12 @@ struct or_options_t {
   int ClientUseDenasa;
 
   int ClientUseCounterRaptor;
+  int ClientUseCLAPSCounterRaptor;
   
   /* location id */
   int location;
+
+  int UseAlternativeWeight;
 
   int ClientPreferIPv6ORPort;
   /** If true, prefer an IPv6 directory port over an IPv4 one for direct
