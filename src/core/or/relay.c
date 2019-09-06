@@ -1653,6 +1653,21 @@ connection_edge_process_relay_cell(cell_t *cell, circuit_t *circ,
         /* only mark it if not already marked. it's possible to
          * get the 'end' right around when the client hangs up on us. */
         connection_mark_and_flush(TO_CONN(conn));
+        /* MATT
+         * Shadow gets in an inifinite loop with my tor code. Tor is told a
+         * conn can read, there are bytes there to read, but Tor doesn't read
+         * them because the connection is marked for close. Tor ALSO doesn't
+         * tell libevent that it doesn't want to know about this readable conn
+         * anymore ... until now. Before this change, libevent would keep
+         * returning over and over again that this conn is readable and we
+         * would never get anywhere because time doesn't pass in shadow during
+         * infinite loops like that.
+         *
+         * This is the place where the connection was marked for close. So this
+         * is the place where I'm adding a call to tell libevent that we don't
+         * want reads anymore.
+         */
+        connection_stop_reading(TO_CONN(conn));
 
         /* Total all valid application bytes delivered */
         if (CIRCUIT_IS_ORIGIN(circ)) {
