@@ -105,6 +105,10 @@
 #include <unistd.h>
 #endif
 
+
+static int weight_parsed = 0;
+
+
 /** Most recently received and validated v3 "ns"-flavored consensus network
  * status. */
 STATIC networkstatus_t *current_ns_consensus = NULL;
@@ -1607,7 +1611,10 @@ routerstatus_has_changed(const routerstatus_t *a, const routerstatus_t *b)
          a->is_valid != b->is_valid ||
          a->is_possible_guard != b->is_possible_guard ||
          a->is_bad_exit != b->is_bad_exit ||
-         a->is_hs_dir != b->is_hs_dir;
+         a->is_hs_dir != b->is_hs_dir ||
+         a->alternative_weight_g != b->alternative_weight_g ||
+         a->alternative_weight_m != b->alternative_weight_m  ||
+         a->alternative_weight_e != b->alternative_weight_e;
   // XXXX this function needs a huge refactoring; it has gotten out
   // XXXX of sync with routerstatus_t, and it will do so again.
 }
@@ -1821,10 +1828,10 @@ warn_early_consensus(const networkstatus_t *c, const char *flavor,
 }
 
 static bool
-parse_line_info(char *line, char **fingerprint, uint32_t* alt_weight_g,
-    uint32_t* alt_weight_m, int this_location) {
+parse_line_info(char *line, char **name, uint32_t* alt_weight_g,
+    uint32_t* alt_weight_m, uint32_t* alt_weight_e, int this_location) {
   char *token = strsep(&line, "_");
-  /** token shoud contain location_fingerprint */
+  /** token shoud contain location_relayname */
   if (!token) {
     log_debug(LD_GENERAL, "Parsing issue, no location");
   }
@@ -1833,10 +1840,10 @@ parse_line_info(char *line, char **fingerprint, uint32_t* alt_weight_g,
     return false;
   token = strsep(&line, " ");
   if (!token) {
-    log_debug(LD_GENERAL, "Parsing issue, no fingerprint");
+    log_debug(LD_GENERAL, "Parsing issue, no name");
   }
   tor_assert(token);
-  *fingerprint = tor_strdup(token);
+  *name = tor_strdup(token);
   token = strsep(&line, " ");
   if (!token) {
     log_debug(LD_GENERAL, "Parsing issue, no guard weight");
@@ -1848,30 +1855,57 @@ parse_line_info(char *line, char **fingerprint, uint32_t* alt_weight_g,
     log_debug(LD_GENERAL, "Parsing issue, no middle weight");
   }
   *alt_weight_m = atoi(token);
+  token = strsep(&line, " ");
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no exit weight");
+  }
+  *alt_weight_e = atoi(token);
   return true;
 }
 
-STATIC void
+/**
+ * Parse alternative weight for Counter-RAPTOR, DeNASA and their CLAPS version
+ *
+ * FIXME: handle LASTor case (i.e., weights depends on previous hop)
+ */
+ 
+void
 parse_alternative_weights(const char *filename) {
   
   FILE *file = fopen(filename, "r");
   ssize_t read;
   char *line = NULL;
-  bool ok;
+  int ok = 2;
+  bool found;
   size_t len = 0;
-  char *fingerprint = NULL;
+  char *name = NULL;
   uint32_t alternative_weight_g;
   uint32_t alternative_weight_m;
+  uint32_t alternative_weight_e;
   int our_location = get_options()->location;
+  /**
+   * parse the file until we find our location, parse all line of our location
+   * file and then get out of this
+   */
   while (ok && (read = getline(&line, &len, file)) != -1) {
-    ok = parse_line_info(line, &fingerprint, &alternative_weight_g,
-        &alternative_weight_m, our_location);
-    if (ok) {
+    found = parse_line_info(line, &name, &alternative_weight_g,
+        &alternative_weight_m, &alternative_weight_e, our_location);
+    if (found) {
+      if (ok == 2)
+        ok--;
       /** modify router's info for alternative_weight */
-      node_t *node = node_get_mutable_by_id(fingerprint);
+      log_info(LD_GENERAL, "looking for node %s", name);
+      node_t *node = (node_t *)node_get_by_nickname(name, NNF_NO_WARN_UNNAMED);
       tor_assert(node);
       node->rs->alternative_weight_g = alternative_weight_g; 
       node->rs->alternative_weight_m = alternative_weight_m; 
+      node->rs->alternative_weight_e = alternative_weight_e;
+    }
+    /** 
+     * it means we can exit the loop
+     */
+    if (ok == 1 && !found) {
+      ok--;
     }
   }
 }
@@ -1932,13 +1966,6 @@ networkstatus_set_current_consensus(const char *consensus,
     log_warn(LD_DIR, "Unable to parse networkstatus consensus");
     result = -2;
     goto done;
-  }
-  /** 
-   * Hijack this function to load special weights as well-- would work fine for
-   * shadow experiments only
-   */
-  if (get_options()->UseAlternativeWeight) {
-    parse_alternative_weights("alternative_weights");
   }
 
   if (from_cache && !was_waiting_for_certs) {
@@ -2146,6 +2173,19 @@ networkstatus_set_current_consensus(const char *consensus,
     reschedule_dirvote(options);
 
     nodelist_set_consensus(c);
+    /** 
+     * We should have a usable conensus...
+     * Hijack this function to load special weights as well-- would work fine for
+     * shadow experiments only
+     */
+    if ((get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
+        get_options()->ClientUseCounterRaptor) && 
+        !weight_parsed) {
+      log_warn(LD_GENERAL, "Parsing alternative weights");
+      weight_parsed = 1;
+      parse_alternative_weights("alternative_weights");
+    }
+
 
     /* XXXXNM Microdescs: needs a non-ns variant. ???? NM*/
     update_consensus_networkstatus_fetch_time(now);
@@ -2190,7 +2230,7 @@ networkstatus_set_current_consensus(const char *consensus,
 
   /* We got a new consesus. Reset our md fetch fail cache */
   microdesc_reset_outdated_dirservers_list();
-
+  
   router_dir_info_changed();
 
   result = 0;

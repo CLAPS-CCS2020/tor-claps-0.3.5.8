@@ -2288,7 +2288,7 @@ count_usable_descriptors(int *num_present, int *num_usable,
  * If there are no exits in the consensus, we treat the exit fraction as 100%,
  * but set router_have_consensus_path() so that we can only build internal
  * paths. */
-static double
+double
 compute_frac_paths_available(const networkstatus_t *consensus,
                              const or_options_t *options, time_t now,
                              int *num_present_out, int *num_usable_out,
