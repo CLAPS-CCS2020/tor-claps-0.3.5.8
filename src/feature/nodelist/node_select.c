@@ -513,13 +513,18 @@ smartlist_choose_node_as_denasa(const smartlist_t *sl,
 
   return NULL;
 }
+
 static const node_t *
 smartlist_choose_node_as_counterRaptor(const smartlist_t *sl,
                                 bandwidth_weight_rule_t rule)
 {
-  if (rule != WEIGHT_FOR_GUARD) {
+  if (get_options()->ClientUseCounterRaptor && rule != WEIGHT_FOR_GUARD) {
     return smartlist_choose_node_by_bandwidth_weights(sl, rule);
   }
+  else if (get_options()->ClientUseCLAPSCounterRaptor && rule == WEIGHT_FOR_EXIT) {
+    return smartlist_choose_node_by_bandwidth_weights(sl, rule);
+  }
+  /** Select with alternative weights :-) */
   double *bandwidths_dbl=NULL;
   uint64_t *weights_u64  = NULL;
   

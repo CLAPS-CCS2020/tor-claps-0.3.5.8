@@ -349,6 +349,8 @@ static config_var_t option_vars_[] = {
   V(ClientUseLastor,             BOOL,     "0"),
   V(ClientUseDenasa,             BOOL,     "0"),
   V(ClientUseCounterRaptor,      BOOL,     "0"),
+  V(ClientUseCLAPSCounterRaptor,      BOOL,     "0"),
+  V(UseAlternativeWeight,        BOOL,     "0"),
   V(location,                    INT,      "-1"),
   V(ConsensusParams,             STRING,   NULL),
   V(ConnLimit,                   UINT,     "1000"),

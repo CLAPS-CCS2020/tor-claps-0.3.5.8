@@ -1937,8 +1937,7 @@ networkstatus_set_current_consensus(const char *consensus,
    * Hijack this function to load special weights as well-- would work fine for
    * shadow experiments only
    */
-  if (get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
-      get_options()->ClientUseCounterRaptor) {
+  if (get_options()->UseAlternativeWeight) {
     parse_alternative_weights("alternative_weights");
   }
 
