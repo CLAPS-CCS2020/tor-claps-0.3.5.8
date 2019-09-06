@@ -623,13 +623,13 @@ compute_alternative_bandwidths(const smartlist_t *sl,
   SMARTLIST_FOREACH_BEGIN(sl, const node_t *, node) {
 
     if (rule == WEIGHT_FOR_GUARD) {
-      weights[node_sl_idx] = node->rs->alternative_weight_g;
+      weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_g);
     }
     else if (rule == WEIGHT_FOR_MID) {
-      weights[node_sl_idx] = node->rs->alternative_weight_m;
+      weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_m);
     }
     else if (rule == WEIGHT_FOR_EXIT) {
-      weights[node_sl_idx] = node->rs->alternative_weight_e;
+      weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_e);
     }
     else {
       return -1;
@@ -910,10 +910,20 @@ node_sl_choose_by_bandwidth(const smartlist_t *sl,
     return smartlist_choose_node_as_denasa(sl, rule);
   }
   else if (get_options()->ClientUseCounterRaptor) {
-    return smartlist_choose_node_as_counterRaptor(sl, rule);
+    const node_t *node = smartlist_choose_node_as_counterRaptor(sl, rule);
+    if (node && rule == WEIGHT_FOR_GUARD)  {
+      log_warn(LD_CIRC, "Chooses node %s, with weight %d", node_describe(node),
+          node->rs->alternative_weight_g);
+    }
+    return node;
   }
   else {
-    return smartlist_choose_node_by_bandwidth_weights(sl, rule);
+    const node_t *node = smartlist_choose_node_by_bandwidth_weights(sl, rule);
+    if (node) {
+      log_warn(LD_CIRC, "Chooses node %s, with weight %d", node_describe(node),
+          kb_to_bytes(node->rs->bandwidth_kb));
+    }
+    return node;
   }
 }
 
