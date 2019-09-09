@@ -914,11 +914,11 @@ node_sl_choose_by_bandwidth(const smartlist_t *sl,
   else if (get_options()->ClientUseDenasa) {
     return smartlist_choose_node_as_denasa(sl, rule);
   }
-  else if (get_options()->ClientUseCounterRaptor || get_options->ClientUseCLAPSCounterRaptor) {
+  else if (get_options()->ClientUseCounterRaptor || get_options()->ClientUseCLAPSCounterRaptor) {
     const node_t *node = smartlist_choose_node_as_counterRaptor(sl, rule);
     if (node && rule == WEIGHT_FOR_GUARD)  {
-      log_warn(LD_CIRC, "Chooses node %s, with weight %d", node_describe(node),
-          node->rs->alternative_weight_g);
+      log_warn(LD_CIRC, "Chooses node %s, with weight %d from %d guard relays", node_describe(node),
+          node->rs->alternative_weight_g, smartlist_len(sl));
     }
     return node;
   }
