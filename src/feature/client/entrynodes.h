@@ -409,11 +409,11 @@ MOCK_DECL(int,num_bridges_usable,(int use_maybe_reachable));
  * We never let our sampled guard set grow larger than this number of
  * guards.
  */
-#define DFLT_MAX_SAMPLE_SIZE 60
+#define DFLT_MAX_SAMPLE_SIZE 1
 /**
  * We always try to make our sample contain at least this many guards.
  */
-#define DFLT_MIN_FILTERED_SAMPLE_SIZE 20
+#define DFLT_MIN_FILTERED_SAMPLE_SIZE 1
 /**
  * If a guard is unlisted for this many days in a row, we remove it.
  */
@@ -431,7 +431,7 @@ MOCK_DECL(int,num_bridges_usable,(int use_maybe_reachable));
 /**
  * How many guards do we try to keep on our primary guard list?
  */
-#define DFLT_N_PRIMARY_GUARDS 3
+#define DFLT_N_PRIMARY_GUARDS 1
 /**
  * Of the live guards on the primary guard list, how many do we consider when
  * choosing a guard to use?
@@ -440,7 +440,7 @@ MOCK_DECL(int,num_bridges_usable,(int use_maybe_reachable));
 /**
  * As DFLT_N_PRIMARY_GUARDS, but for choosing which directory guard to use.
  */
-#define DFLT_N_PRIMARY_DIR_GUARDS_TO_USE 3
+#define DFLT_N_PRIMARY_DIR_GUARDS_TO_USE 1
 /**
  * If we haven't successfully built or used a circuit in this long, then
  * consider that the internet is probably down.
