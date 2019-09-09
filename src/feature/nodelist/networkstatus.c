@@ -2179,7 +2179,7 @@ networkstatus_set_current_consensus(const char *consensus,
      * shadow experiments only
      */
     if ((get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
-        get_options()->ClientUseCounterRaptor) && 
+        get_options()->ClientUseCounterRaptor || get_options()->ClientUseCLAPSCounterRaptor) && 
         !weight_parsed) {
       log_warn(LD_GENERAL, "Parsing alternative weights");
       weight_parsed = 1;
