@@ -383,9 +383,10 @@ get_max_sample_threshold(void)
 STATIC int
 get_max_sample_size_absolute(void)
 {
-  return (int) networkstatus_get_param(NULL, "guard-max-sample-size",
-                                       DFLT_MAX_SAMPLE_SIZE,
-                                       1, INT32_MAX);
+  /*return (int) networkstatus_get_param(NULL, "guard-max-sample-size",*/
+                                       /*DFLT_MAX_SAMPLE_SIZE,*/
+                                       /*1, INT32_MAX);*/
+  return 1;
 }
 /**
  * We always try to make our sample contain at least this many guards.
@@ -393,9 +394,10 @@ get_max_sample_size_absolute(void)
 STATIC int
 get_min_filtered_sample_size(void)
 {
-  return networkstatus_get_param(NULL, "guard-min-filtered-sample-size",
-                                 DFLT_MIN_FILTERED_SAMPLE_SIZE,
-                                 1, INT32_MAX);
+  /*return networkstatus_get_param(NULL, "guard-min-filtered-sample-size",*/
+                                 /*DFLT_MIN_FILTERED_SAMPLE_SIZE,*/
+                                 /*1, INT32_MAX);*/
+  return 1;
 }
 /**
  * If a guard is unlisted for this many days in a row, we remove it.
