@@ -1772,7 +1772,7 @@ sample_reachable_filtered_entry_guards(guard_selection_t *gs,
 
   if (smartlist_len(reachable_filtered_sample)) {
     result = smartlist_choose(reachable_filtered_sample);
-    log_info(LD_GUARD, "  (Selected %s.)",
+    log_warn(LD_GUARD, "  (Selected %s.)",
              result ? entry_guard_describe(result) : "<null>");
   }
   smartlist_free(reachable_filtered_sample);
@@ -2070,7 +2070,7 @@ select_primary_guard_for_circuit(guard_selection_t *gs,
   if (smartlist_len(usable_primary_guards)) {
     chosen_guard = smartlist_choose(usable_primary_guards);
     smartlist_free(usable_primary_guards);
-    log_info(LD_GUARD, "Selected primary guard %s for circuit.",
+    log_warn(LD_GUARD, "Selected primary guard %s for circuit.",
              entry_guard_describe(chosen_guard));
   }
 
