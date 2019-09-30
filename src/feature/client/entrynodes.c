@@ -2093,7 +2093,7 @@ select_primary_guard_for_circuit(guard_selection_t *gs,
   if (smartlist_len(usable_primary_guards)) {
     chosen_guard = smartlist_choose(usable_primary_guards);
     smartlist_free(usable_primary_guards);
-    log_info(LD_GUARD, "Selected primary guard %s for circuit.",
+    log_warn(LD_GUARD, "Selected primary guard %s for circuit.",
              entry_guard_describe(chosen_guard));
   }
 
