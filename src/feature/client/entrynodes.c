@@ -2076,10 +2076,14 @@ select_primary_guard_for_circuit(guard_selection_t *gs,
   smartlist_sort(gs->primary_entry_guards, compare_guards_by_sampled_idx);
   SMARTLIST_FOREACH_BEGIN(gs->primary_entry_guards, entry_guard_t *, guard) {
     entry_guard_consider_retry(guard);
-    if (! entry_guard_obeys_restriction(guard, rst))
+    if (! entry_guard_obeys_restriction(guard, rst)){
+      log_warn(LD_GUARD, "Entry guard %s doesn't obey restriction, we test the next one",
+          entry_guard_describe(guard));
       continue;
+    }
     if (guard->is_reachable != GUARD_REACHABLE_NO) {
       if (need_descriptor && !guard_has_descriptor(guard)) {
+        log_warn(LD_GUARD, "Guard %s does not have a descriptor", entry_guard_describe(guard));
         continue;
       }
       *state_out = GUARD_CIRC_STATE_USABLE_ON_COMPLETION;
@@ -2092,9 +2096,9 @@ select_primary_guard_for_circuit(guard_selection_t *gs,
 
   if (smartlist_len(usable_primary_guards)) {
     chosen_guard = smartlist_choose(usable_primary_guards);
+    log_warn(LD_GUARD, "Selected primary guard %s for circuit from a list size of %d.",
+             entry_guard_describe(chosen_guard), smartlist_len(usable_primary_guards));
     smartlist_free(usable_primary_guards);
-    log_warn(LD_GUARD, "Selected primary guard %s for circuit.",
-             entry_guard_describe(chosen_guard));
   }
 
   smartlist_free(usable_primary_guards);
