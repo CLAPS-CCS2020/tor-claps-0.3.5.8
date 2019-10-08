@@ -626,12 +626,34 @@ compute_alternative_bandwidths(const smartlist_t *sl,
   weights = tor_calloc(smartlist_len(sl), sizeof(double));
 
   SMARTLIST_FOREACH_BEGIN(sl, const node_t *, node) {
+    int is_exit = 0, is_guard = 0;
+    is_exit = node->is_exit && !node->is_bad_exit;
+    is_guard = node->is_possible_guard;
 
     if (rule == WEIGHT_FOR_GUARD) {
       weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_g);
     }
     else if (rule == WEIGHT_FOR_MID) {
-      weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_m);
+      double Wd = -1;
+      Wd = networkstatus_get_bw_weight(NULL, "Wmd", -1);
+      Wd /= 10000.0;
+      if (is_exit && is_guard) {
+        /** should be 0 if Wmd = 0, which is on that kind of Tor topology we run experiments */
+        weights[node_sl_idx] = Wd * kb_to_bytes(node->rs->bandwidth_kb);
+      }
+      else if (is_guard) {
+        weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_m);
+      }
+      else if (is_exit) {
+        /** Again, we assume exit relays are scarce */
+        weights[node_sl_idx] = 0;
+      }
+      else {
+         /**
+         * Add unflagged nodes's weights should just be the bandwidth
+         */
+         weights[node_sl_idx] = kb_to_bytes(node->rs->bandwidth_kb);
+      }
     }
     else if (rule == WEIGHT_FOR_EXIT) {
       weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_e);
