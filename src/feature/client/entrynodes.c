@@ -1808,7 +1808,7 @@ compare_guards_by_sampled_idx(const void **a_, const void **b_)
   const entry_guard_t *a = *a_, *b = *b_;
   if (a->sampled_idx < b->sampled_idx)
     return -1;
-  else if (a->confirmed_idx > b->confirmed_idx)
+  else if (a->sampled_idx > b->sampled_idx)
     return 1;
   else
     return 0;
@@ -2074,11 +2074,19 @@ select_primary_guard_for_circuit(guard_selection_t *gs,
    * even for the N same relays 
    * */
   smartlist_sort(gs->primary_entry_guards, compare_guards_by_sampled_idx);
-  SMARTLIST_FOREACH_BEGIN(gs->primary_entry_guards, entry_guard_t *, guard) {
+  log_warn(LD_GUARD, "Primary guards size: %d", smartlist_len(gs->primary_entry_guards));
+  for (int i = 0; i < smartlist_len(gs->primary_entry_guards); i++) {
+    entry_guard_t *guard = smartlist_get(gs->primary_entry_guards, i);
+    log_warn(LD_GUARD, "Guard %d of the list: %s; confirmed_idx: %d",
+        i, entry_guard_describe(guard), guard->confirmed_idx);
+  }
+  for (int i = 0; i < num_entry_guards; i++) {
+    entry_guard_t *guard = smartlist_get(gs->primary_entry_guards, i);
+    log_warn(LD_GUARD, "guard of the list %d: %s", i, entry_guard_describe(guard));
     entry_guard_consider_retry(guard);
     if (! entry_guard_obeys_restriction(guard, rst)){
-      log_warn(LD_GUARD, "Entry guard %s doesn't obey restriction, we test the next one",
-          entry_guard_describe(guard));
+      log_warn(LD_GUARD, "Entry guard %s with sampled_idx %d doesn't obey restriction, we test the next one",
+          entry_guard_describe(guard), guard->sampled_idx);
       continue;
     }
     if (guard->is_reachable != GUARD_REACHABLE_NO) {
@@ -2089,15 +2097,16 @@ select_primary_guard_for_circuit(guard_selection_t *gs,
       *state_out = GUARD_CIRC_STATE_USABLE_ON_COMPLETION;
       guard->last_tried_to_connect = approx_time();
       smartlist_add(usable_primary_guards, guard);
-      if (smartlist_len(usable_primary_guards) >= num_entry_guards)
-        break;
     }
-  } SMARTLIST_FOREACH_END(guard);
+    else{
+      log_warn(LD_GUARD, "Guard %s is REACHABLE_NO", entry_guard_describe(guard));
+    }
+  }
 
   if (smartlist_len(usable_primary_guards)) {
     chosen_guard = smartlist_choose(usable_primary_guards);
-    log_warn(LD_GUARD, "Selected primary guard %s for circuit from a list size of %d.",
-             entry_guard_describe(chosen_guard), smartlist_len(usable_primary_guards));
+    log_warn(LD_GUARD, "Selected primary guard %s with sampled_idx %d for circuit from a list size of %d.",
+             entry_guard_describe(chosen_guard), chosen_guard->sampled_idx, smartlist_len(usable_primary_guards));
     smartlist_free(usable_primary_guards);
   }
 
