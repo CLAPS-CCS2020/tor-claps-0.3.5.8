@@ -67,6 +67,10 @@ struct node_t {
   unsigned int is_hs_dir:1; /**< True iff this router is a hidden service
                              * directory according to the authorities. */
 
+  /** should contain the alternative weight we give to this router */
+  uint32_t alternative_weight_g; 
+  uint32_t alternative_weight_m; 
+  uint32_t alternative_weight_e;
   /* Local info: warning state. */
 
   unsigned int name_lookup_warned:1; /**< Have we warned the user for referring

@@ -1611,10 +1611,7 @@ routerstatus_has_changed(const routerstatus_t *a, const routerstatus_t *b)
          a->is_valid != b->is_valid ||
          a->is_possible_guard != b->is_possible_guard ||
          a->is_bad_exit != b->is_bad_exit ||
-         a->is_hs_dir != b->is_hs_dir ||
-         a->alternative_weight_g != b->alternative_weight_g ||
-         a->alternative_weight_m != b->alternative_weight_m  ||
-         a->alternative_weight_e != b->alternative_weight_e;
+         a->is_hs_dir != b->is_hs_dir;
   // XXXX this function needs a huge refactoring; it has gotten out
   // XXXX of sync with routerstatus_t, and it will do so again.
 }
@@ -1897,9 +1894,9 @@ parse_alternative_weights(const char *filename) {
       log_info(LD_GENERAL, "looking for node %s", name);
       node_t *node = (node_t *)node_get_by_nickname(name, NNF_NO_WARN_UNNAMED);
       tor_assert(node);
-      node->rs->alternative_weight_g = alternative_weight_g; 
-      node->rs->alternative_weight_m = alternative_weight_m; 
-      node->rs->alternative_weight_e = alternative_weight_e;
+      node->alternative_weight_g = alternative_weight_g; 
+      node->alternative_weight_m = alternative_weight_m; 
+      node->alternative_weight_e = alternative_weight_e;
     }
     /** 
      * it means we can exit the loop
