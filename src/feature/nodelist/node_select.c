@@ -628,10 +628,15 @@ compute_alternative_bandwidths(const smartlist_t *sl,
   weights = tor_calloc(smartlist_len(sl), sizeof(double));
 
   SMARTLIST_FOREACH_BEGIN(sl, const node_t *, node) {
-    int is_exit = 0, is_guard = 0, is_dir = 0;
+    int is_exit = 0, is_guard = 0, is_auth = 0;
     is_exit = node->is_exit && !node->is_bad_exit;
     is_guard = node->is_possible_guard;
-    is_dir = node_is_dir(node);
+    if (node->rs) {
+      is_auth =  node->rs->is_authority;
+    }
+    else  {
+      log_warn(LD_CIRC, "Woups no routerstatus when selecting?");
+    }
     if (rule == WEIGHT_FOR_GUARD) {
       weights[node_sl_idx] = kb_to_bytes(node->alternative_weight_g);
     }
@@ -639,12 +644,14 @@ compute_alternative_bandwidths(const smartlist_t *sl,
       double Wd = -1;
       Wd = networkstatus_get_bw_weight(NULL, "Wmd", -1);
       Wd /= 10000.0;
-      if (is_dir) {
-        weights[node_sl_idx] = kb_to_bytes(node->rs->bandwidth_kb);
-      }
-      else if (is_exit && is_guard) {
+      if (is_exit && is_guard) {
         /** should be 0 if Wmd = 0, which is on that kind of Tor topology we run experiments */
-        weights[node_sl_idx] = Wd * kb_to_bytes(node->rs->bandwidth_kb);
+        if (is_auth) {
+          weights[node_sl_idx] = kb_to_bytes(node->rs->bandwidth_kb);
+        }
+        else {
+          weights[node_sl_idx] = Wd * kb_to_bytes(node->rs->bandwidth_kb);
+        }
       }
       else if (is_guard) {
         weights[node_sl_idx] = kb_to_bytes(node->alternative_weight_m);
