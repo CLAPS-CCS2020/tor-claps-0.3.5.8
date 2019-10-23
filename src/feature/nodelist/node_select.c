@@ -524,22 +524,24 @@ smartlist_choose_node_as_counterRaptor(const smartlist_t *sl,
   else if (get_options()->ClientUseCLAPSCounterRaptor && rule == WEIGHT_FOR_EXIT) {
     return smartlist_choose_node_by_bandwidth_weights(sl, rule);
   }
-  /** Select with alternative weights :-) */
-  double *bandwidths_dbl=NULL;
-  uint64_t *weights_u64  = NULL;
-  
-  if (compute_alternative_bandwidths(sl, rule, &bandwidths_dbl) < 0)
-    return NULL;
-  
-  weights_u64 = tor_calloc(smartlist_len(sl), sizeof(uint64_t));
-  scale_array_elements_to_u64(weights_u64, bandwidths_dbl,
-                              smartlist_len(sl), NULL);
-  
-  int idx = choose_array_element_by_weight(weights_u64,
-                                           smartlist_len(sl));
-  tor_free(bandwidths_dbl);
-  tor_free(weights_u64);
-  return idx < 0 ? NULL : smartlist_get(sl, idx);
+  else {
+    /** Select with alternative weights :-) */
+    double *bandwidths_dbl=NULL;
+    uint64_t *weights_u64  = NULL;
+    
+    if (compute_alternative_bandwidths(sl, rule, &bandwidths_dbl) < 0)
+      return NULL;
+    
+    weights_u64 = tor_calloc(smartlist_len(sl), sizeof(uint64_t));
+    scale_array_elements_to_u64(weights_u64, bandwidths_dbl,
+                                smartlist_len(sl), NULL);
+    
+    int idx = choose_array_element_by_weight(weights_u64,
+                                             smartlist_len(sl));
+    tor_free(bandwidths_dbl);
+    tor_free(weights_u64);
+    return idx < 0 ? NULL : smartlist_get(sl, idx);
+  }
 }
 
 /** Helper function:
@@ -617,7 +619,7 @@ compute_alternative_bandwidths(const smartlist_t *sl,
   tor_assert(sl);
 
   if (smartlist_len(sl) == 0) {
-    log_info(LD_CIRC,
+    log_warn(LD_CIRC,
              "Empty routerlist passed in to consensus weight node ");
     return -1;
   }
@@ -626,12 +628,17 @@ compute_alternative_bandwidths(const smartlist_t *sl,
   weights = tor_calloc(smartlist_len(sl), sizeof(double));
 
   SMARTLIST_FOREACH_BEGIN(sl, const node_t *, node) {
-    int is_exit = 0, is_guard = 0;
+    int is_exit = 0, is_guard = 0, is_auth = 0;
     is_exit = node->is_exit && !node->is_bad_exit;
     is_guard = node->is_possible_guard;
-
+    if (node->rs) {
+      is_auth =  node->rs->is_authority;
+    }
+    else  {
+      log_warn(LD_CIRC, "Woups no routerstatus when selecting?");
+    }
     if (rule == WEIGHT_FOR_GUARD) {
-      weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_g);
+      weights[node_sl_idx] = kb_to_bytes(node->alternative_weight_g);
     }
     else if (rule == WEIGHT_FOR_MID) {
       double Wd = -1;
@@ -639,10 +646,15 @@ compute_alternative_bandwidths(const smartlist_t *sl,
       Wd /= 10000.0;
       if (is_exit && is_guard) {
         /** should be 0 if Wmd = 0, which is on that kind of Tor topology we run experiments */
-        weights[node_sl_idx] = Wd * kb_to_bytes(node->rs->bandwidth_kb);
+        if (is_auth) {
+          weights[node_sl_idx] = kb_to_bytes(node->rs->bandwidth_kb);
+        }
+        else {
+          weights[node_sl_idx] = Wd * kb_to_bytes(node->rs->bandwidth_kb);
+        }
       }
       else if (is_guard) {
-        weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_m);
+        weights[node_sl_idx] = kb_to_bytes(node->alternative_weight_m);
       }
       else if (is_exit) {
         /** Again, we assume exit relays are scarce */
@@ -656,7 +668,7 @@ compute_alternative_bandwidths(const smartlist_t *sl,
       }
     }
     else if (rule == WEIGHT_FOR_EXIT) {
-      weights[node_sl_idx] = kb_to_bytes(node->rs->alternative_weight_e);
+      weights[node_sl_idx] = kb_to_bytes(node->alternative_weight_e);
     }
     else {
       return -1;
@@ -940,7 +952,11 @@ node_sl_choose_by_bandwidth(const smartlist_t *sl,
     const node_t *node = smartlist_choose_node_as_counterRaptor(sl, rule);
     if (node && rule == WEIGHT_FOR_GUARD)  {
       log_warn(LD_CIRC, "Chooses node %s, with weight %d from %d guard relays", node_describe(node),
-          node->rs->alternative_weight_g, smartlist_len(sl));
+          node->alternative_weight_g, smartlist_len(sl));
+    }
+    else if (node && rule == WEIGHT_FOR_MID) {
+      log_warn(LD_CIRC, "Chooses middle node %s, with with weight (alt_weights=%d, bw=%d)", node_describe(node),
+          node->alternative_weight_m, node->rs->bandwidth_kb);
     }
     return node;
   }
