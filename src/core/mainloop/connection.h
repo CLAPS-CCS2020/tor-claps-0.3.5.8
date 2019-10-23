@@ -136,7 +136,7 @@ MOCK_DECL(void, connection_mark_for_close_internal_,
   do {                                                                  \
     connection_t *tmp_conn__ = (c);                                     \
     connection_mark_for_close_internal_(tmp_conn__, (line), (file));    \
-    tmp_conn__->hold_open_until_flushed = 0;                            \
+    tmp_conn__->hold_open_until_flushed = 1;                            \
   } while (0)
 
 #define connection_mark_and_flush_internal(c)            \
