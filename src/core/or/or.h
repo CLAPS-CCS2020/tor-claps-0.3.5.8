@@ -108,7 +108,7 @@ struct curve25519_public_key_t;
 #define DOWNCAST(to, ptr) ((to*)SUBTYPE_P(ptr, to, base_))
 
 /** Length of longest allowable configured nickname. */
-#define MAX_NICKNAME_LEN 19
+#define MAX_NICKNAME_LEN 30
 /** Length of a router identity encoded as a hexadecimal digest, plus
  * possible dollar sign. */
 #define MAX_HEX_NICKNAME_LEN (HEX_DIGEST_LEN+1)
@@ -545,7 +545,7 @@ typedef enum {
 
 /** Legal characters in a nickname. */
 #define LEGAL_NICKNAME_CHARACTERS \
-  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 
 /** Name to use in client TLS certificates if no nickname is given. Once
  * Tor 0.1.2.x is obsolete, we can remove this. */
