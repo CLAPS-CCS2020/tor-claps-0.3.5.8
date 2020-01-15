@@ -2573,6 +2573,22 @@ optimistic_data_enabled(void)
   return options->OptimisticData;
 }
 
+static void
+circuit_describe(origin_circuit_t *ocirc) {
+  crypt_path_t *cpath = ocirc->cpath;
+  smartlist_t *names = smartlist_new();
+  while (cpath){
+     smartlist_add_asprintf(names, "%s ", extend_info_describe(cpath->extend_info));
+     cpath = cpath->next;
+  }
+  char *s = smartlist_join_strings(names, "\r\n", 0, NULL);
+  /*log*/
+  log_warn(LD_CIRC,"CIRCUIT ATTACHED: %s", s);
+  /*cleanup*/
+  SMARTLIST_FOREACH(names, char *, cp, tor_free(cp));
+  smartlist_free(names);
+}
+
 /** Attach the AP stream <b>apconn</b> to circ's linked list of
  * p_streams. Also set apconn's cpath_layer to <b>cpath</b>, or to the last
  * hop in circ's cpath if <b>cpath</b> is NULL.
@@ -2582,7 +2598,7 @@ link_apconn_to_circ(entry_connection_t *apconn, origin_circuit_t *circ,
                     crypt_path_t *cpath)
 {
   const node_t *exitnode = NULL;
-
+  circuit_describe(circ);
   /* add it into the linked list of streams on this circuit */
   log_debug(LD_APP|LD_CIRC, "attaching new conn to circ. n_circ_id %u.",
             (unsigned)circ->base_.n_circ_id);
