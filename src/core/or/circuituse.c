@@ -2578,14 +2578,17 @@ circuit_describe(origin_circuit_t *ocirc) {
   crypt_path_t *cpath = ocirc->cpath;
   smartlist_t *names = smartlist_new();
   while (cpath){
-     smartlist_add_asprintf(names, "%s ", extend_info_describe(cpath->extend_info));
+     smartlist_add_asprintf(names, "%s, ", extend_info_describe(cpath->extend_info));
      cpath = cpath->next;
+     if (cpath == ocirc->cpath)
+       break;
   }
-  char *s = smartlist_join_strings(names, "\r\n", 0, NULL);
+  char *s = smartlist_join_strings(names, "", 0, NULL);
   /*log*/
   log_warn(LD_CIRC,"CIRCUIT ATTACHED: %s", s);
   /*cleanup*/
   SMARTLIST_FOREACH(names, char *, cp, tor_free(cp));
+  tor_free(s);
   smartlist_free(names);
 }
 
