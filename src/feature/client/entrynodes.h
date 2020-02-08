@@ -341,6 +341,8 @@ const node_t *guards_choose_guard(cpath_build_state_t *state,
 const node_t *guards_choose_dirguard(uint8_t dir_purpose,
                                      circuit_guard_state_t **guard_state_out);
 
+char * get_primguard_nickname(guard_selection_t *gs);
+
 #if 1
 /* XXXX NM I would prefer that all of this stuff be private to
  * entrynodes.c. */

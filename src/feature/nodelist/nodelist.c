@@ -133,8 +133,7 @@ typedef struct nodelist_t {
 
   /* Set of addresses that belong to nodes we believe in. */
   address_set_t *node_addrs;
-
-  /* The valid-after time of the last live consensus that initialized the
+/* The valid-after time of the last live consensus that initialized the
    * nodelist.  We use this to detect outdated nodelists that need to be
    * rebuilt using a newer consensus. */
   time_t live_consensus_valid_after;
@@ -168,8 +167,7 @@ node_ed_id_eq(const node_t *node1, const node_t *node2)
   return ed25519_pubkey_eq(&node1->ed25519_id, &node2->ed25519_id);
 }
 
-HT_PROTOTYPE(nodelist_ed_map, node_t, ed_ht_ent, node_ed_id_hash,
-             node_ed_id_eq)
+HT_PROTOTYPE(nodelist_ed_map, node_t, ed_ht_ent, node_ed_id_hash, node_ed_id_eq)
 HT_GENERATE2(nodelist_ed_map, node_t, ed_ht_ent, node_ed_id_hash,
              node_ed_id_eq, 0.6, tor_reallocarray_, tor_free_)
 
@@ -183,8 +181,7 @@ init_nodelist(void)
   if (PREDICT_UNLIKELY(the_nodelist == NULL)) {
     the_nodelist = tor_malloc_zero(sizeof(nodelist_t));
     HT_INIT(nodelist_map, &the_nodelist->nodes_by_id);
-    HT_INIT(nodelist_ed_map, &the_nodelist->nodes_by_ed_id);
-    the_nodelist->nodes = smartlist_new();
+    HT_INIT(nodelist_ed_map, &the_nodelist->nodes_by_ed_id); the_nodelist->nodes = smartlist_new();
   }
 }
 
@@ -788,6 +785,8 @@ node_free_(node_t *node)
   if (node->md)
     node->md->held_by_nodes--;
   tor_assert(node->nodelist_idx == -1);
+  if (node->weight_when_guard_is)
+    strmap_free(node->weight_when_guard_is, NULL);
   tor_free(node);
 }
 

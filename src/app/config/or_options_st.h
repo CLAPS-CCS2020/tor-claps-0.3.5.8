@@ -666,6 +666,7 @@ struct or_options_t {
 
   int ClientUseCounterRaptor;
   int ClientUseCLAPSCounterRaptor;
+  int ClientUseCLAPSDeNASA;
   
   /* location id */
   int location;

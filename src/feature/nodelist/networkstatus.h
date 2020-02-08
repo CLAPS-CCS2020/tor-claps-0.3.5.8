@@ -146,6 +146,7 @@ void vote_routerstatus_free_(vote_routerstatus_t *rs);
   FREE_AND_NULL(vote_routerstatus_t, vote_routerstatus_free_, (rs))
 
 void parse_alternative_weights(const char *filename);
+void parse_alternative_denasa_ge_weights(const char *filename);
 
 #ifdef NETWORKSTATUS_PRIVATE
 #ifdef TOR_UNIT_TESTS

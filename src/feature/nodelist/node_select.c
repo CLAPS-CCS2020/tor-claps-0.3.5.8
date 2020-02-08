@@ -505,12 +505,31 @@ static const node_t *
 smartlist_choose_node_as_denasa(const smartlist_t *sl,
                                 bandwidth_weight_rule_t rule)
 {
-  /** do we do e-select? */
-  if (rule != WEIGHT_FOR_GUARD && rule != WEIGHT_FOR_MID) {
-    return smartlist_choose_node_by_bandwidth_weights(sl, rule);
+  
+  if (get_options()->ClientUseDenasa) {
+
+    /** do we do e-select? */
+    if (rule != WEIGHT_FOR_GUARD && rule != WEIGHT_FOR_MID) {
+      return smartlist_choose_node_by_bandwidth_weights(sl, rule);
+    }
   }
-
-
+  /** We do GE-select */
+  else if (get_options()->ClientUseCLAPSDeNASA) {
+    double *bandwidths_dbl = NULL;
+    uint64_t *weights_u64 = NULL; 
+    if (compute_alternative_bandwidths(sl, rule, &bandwidths_dbl) < 0)
+      return NULL;
+    
+    weights_u64 = tor_calloc(smartlist_len(sl), sizeof(uint64_t));
+    scale_array_elements_to_u64(weights_u64, bandwidths_dbl,
+                                smartlist_len(sl), NULL);
+    
+    int idx = choose_array_element_by_weight(weights_u64,
+                                             smartlist_len(sl));
+    tor_free(bandwidths_dbl);
+    tor_free(weights_u64);
+    return idx < 0 ? NULL : smartlist_get(sl, idx);
+  }
   return NULL;
 }
 
@@ -668,7 +687,13 @@ compute_alternative_bandwidths(const smartlist_t *sl,
       }
     }
     else if (rule == WEIGHT_FOR_EXIT) {
-      weights[node_sl_idx] = kb_to_bytes(node->alternative_weight_e);
+      if (get_options()->ClientUseCLAPSDeNASA) {
+        char *primaguardnick = get_primguard_nickname(get_guard_selection_info());
+        uint32_t* thisnode_weight =  (uint32_t*) strmap_get(node->weight_when_guard_is, primaguardnick);
+        weights[node_sl_idx] = kb_to_bytes(*thisnode_weight);
+      }
+      else
+        weights[node_sl_idx] = kb_to_bytes(node->alternative_weight_e);
     }
     else {
       return -1;
@@ -945,7 +970,7 @@ node_sl_choose_by_bandwidth(const smartlist_t *sl,
   if (get_options()->ClientUseLastor) {
     return smartlist_choose_node_as_lastor(sl, rule);
   }
-  else if (get_options()->ClientUseDenasa) {
+  else if (get_options()->ClientUseDenasa || get_options()->ClientUseCLAPSDeNASA) {
     return smartlist_choose_node_as_denasa(sl, rule);
   }
   else if (get_options()->ClientUseCounterRaptor || get_options()->ClientUseCLAPSCounterRaptor) {

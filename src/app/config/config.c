@@ -350,6 +350,7 @@ static config_var_t option_vars_[] = {
   V(ClientUseDenasa,             BOOL,     "0"),
   V(ClientUseCounterRaptor,      BOOL,     "0"),
   V(ClientUseCLAPSCounterRaptor,      BOOL,     "0"),
+  V(ClientUseCLAPSDeNASA,        BOOL,     "0"),
   V(UseAlternativeWeight,        BOOL,     "0"),
   V(location,                    INT,      "-1"),
   V(ConsensusParams,             STRING,   NULL),

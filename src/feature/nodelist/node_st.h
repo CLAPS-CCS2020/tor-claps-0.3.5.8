@@ -71,7 +71,12 @@ struct node_t {
   uint32_t alternative_weight_g; 
   uint32_t alternative_weight_m; 
   uint32_t alternative_weight_e;
+  /** contains a mapping relayguard name => weight for this exit node 
+   * when relayguard is being used as guard 
+   * /!\ Uses names and not ids, only made to work with Shadow */
+  strmap_t *weight_when_guard_is;
   /* Local info: warning state. */
+
 
   unsigned int name_lookup_warned:1; /**< Have we warned the user for referring
                                       * to this (unnamed) router by nickname?

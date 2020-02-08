@@ -1825,6 +1825,47 @@ warn_early_consensus(const networkstatus_t *c, const char *flavor,
 }
 
 static bool
+parse_line_for_denasa_ge_info(char *line, char **name, char **guardname, uint32_t* alt_weight_e,
+    int this_location) {
+  char *token = strsep(&line, ",");
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no location,relayguard info?");
+  }
+  tor_assert(token);
+  if (this_location != atoi(token))
+    return false;
+
+  token = strsep(&line, "_");
+  // now we should have the guard name
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no relayguard_relayexit info ?");
+  }
+  *guardname = tor_strdup(token);
+  token = strsep(&line, " ");
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no exit name");
+  }
+  tor_assert(token);
+  *name = tor_strdup(token);
+  token = strsep(&line, " ");
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no guard weight");
+  }
+  tor_assert(token);
+  token = strsep(&line, " ");
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no middle weight");
+  }
+  tor_assert(token);
+  token = strsep(&line, " ");
+  if (!token) {
+    log_debug(LD_GENERAL, "Parsing issue, no exit weight");
+  }
+  *alt_weight_e = atoi(token);
+  return true;
+}
+
+static bool
 parse_line_info(char *line, char **name, uint32_t* alt_weight_g,
     uint32_t* alt_weight_m, uint32_t* alt_weight_e, int this_location) {
   char *token = strsep(&line, "_");
@@ -1861,9 +1902,8 @@ parse_line_info(char *line, char **name, uint32_t* alt_weight_g,
 }
 
 /**
- * Parse alternative weight for Counter-RAPTOR, DeNASA and their CLAPS version
+ * Parse alternative weight for Counter-RAPTOR, DeNASA (g-select) and their CLAPS version
  *
- * FIXME: handle LASTor case (i.e., weights depends on previous hop)
  */
  
 void
@@ -1898,13 +1938,55 @@ parse_alternative_weights(const char *filename) {
       node->alternative_weight_m = alternative_weight_m; 
       node->alternative_weight_e = alternative_weight_e;
     }
-    /** 
-     * it means we can exit the loop
-     */
+    /** We should have parsed everything at this point */
     if (ok == 1 && !found) {
       ok--;
     }
   }
+  tor_free(name);
+  fclose(file);
+}
+
+/**
+ * Parse alternative weights for CLAPS DeNASA GE version
+ */
+
+void
+parse_alternative_denasa_ge_weights(const char *filename) {
+  FILE *file = fopen(filename, "r");
+  ssize_t read;
+  char *line = NULL;
+  int ok = 2;
+  bool found;
+  size_t len = 0;
+  char *name = NULL;
+  char *guardname = NULL;
+  int our_location = get_options()->location;
+  
+  while (ok && (read = getline(&line, &len, file)) != -1) {
+    uint32_t *alternative_weight_e = tor_malloc(sizeof(uint32_t));
+    found = parse_line_for_denasa_ge_info(line, &name, &guardname, alternative_weight_e,
+        our_location);
+    if (found) {
+      if (ok == 2)
+        ok--;
+      
+      node_t *node = (node_t *) node_get_by_nickname(name, NNF_NO_WARN_UNNAMED);
+      tor_assert(node);
+      if (!node->weight_when_guard_is) 
+        node->weight_when_guard_is = strmap_new();
+      strmap_set(node->weight_when_guard_is, guardname, (void*)alternative_weight_e);
+    }
+    else {
+      tor_free(alternative_weight_e);
+    }
+    if (ok == 1 && !found) {
+      ok--;
+    }
+  }
+  tor_free(name);
+  tor_free(guardname);
+  fclose(file);
 }
 
 /** Try to replace the current cached v3 networkstatus with the one in
@@ -2176,11 +2258,15 @@ networkstatus_set_current_consensus(const char *consensus,
      * shadow experiments only
      */
     if ((get_options()->ClientUseLastor || get_options()->ClientUseDenasa ||
-        get_options()->ClientUseCounterRaptor || get_options()->ClientUseCLAPSCounterRaptor) && 
+        get_options()->ClientUseCounterRaptor || get_options()->ClientUseCLAPSCounterRaptor ||
+        get_options()->ClientUseCLAPSDeNASA) && 
         !weight_parsed) {
       log_warn(LD_GENERAL, "Parsing alternative weights");
       weight_parsed = 1;
       parse_alternative_weights("alternative_weights");
+      if (get_options()->ClientUseCLAPSDeNASA) {
+        parse_alternative_denasa_ge_weights("alternative_weights_denasa_ge");
+      }
     }
 
 

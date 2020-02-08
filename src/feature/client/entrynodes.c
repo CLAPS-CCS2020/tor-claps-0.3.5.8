@@ -310,6 +310,12 @@ get_guard_selection_info(void)
   return curr_guard_context;
 }
 
+char *
+get_primguard_nickname(guard_selection_t *gs) {
+  entry_guard_t *primguard = smartlist_get(gs->primary_entry_guards, 0);
+  return primguard->nickname;
+}
+
 /** Return a statically allocated human-readable description of <b>guard</b>
  */
 const char *
