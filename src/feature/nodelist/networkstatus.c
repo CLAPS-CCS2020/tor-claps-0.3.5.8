@@ -1829,7 +1829,7 @@ parse_line_for_denasa_ge_info(char *line, char **name, char **guardname, uint32_
     int this_location) {
   char *token = strsep(&line, ",");
   if (!token) {
-    log_debug(LD_GENERAL, "Parsing issue, no location,relayguard info?");
+    log_warn(LD_GENERAL, "Parsing issue, no location,relayguard info?");
   }
   tor_assert(token);
   if (this_location != atoi(token))
@@ -1838,28 +1838,28 @@ parse_line_for_denasa_ge_info(char *line, char **name, char **guardname, uint32_
   token = strsep(&line, "_");
   // now we should have the guard name
   if (!token) {
-    log_debug(LD_GENERAL, "Parsing issue, no relayguard_relayexit info ?");
+    log_warn(LD_GENERAL, "Parsing issue, no relayguard_relayexit info ?");
   }
   *guardname = tor_strdup(token);
   token = strsep(&line, " ");
   if (!token) {
-    log_debug(LD_GENERAL, "Parsing issue, no exit name");
+    log_warn(LD_GENERAL, "Parsing issue, no exit name");
   }
   tor_assert(token);
   *name = tor_strdup(token);
   token = strsep(&line, " ");
   if (!token) {
-    log_debug(LD_GENERAL, "Parsing issue, no guard weight");
+    log_warn(LD_GENERAL, "Parsing issue, no guard weight");
   }
   tor_assert(token);
   token = strsep(&line, " ");
   if (!token) {
-    log_debug(LD_GENERAL, "Parsing issue, no middle weight");
+    log_warn(LD_GENERAL, "Parsing issue, no middle weight");
   }
   tor_assert(token);
   token = strsep(&line, " ");
   if (!token) {
-    log_debug(LD_GENERAL, "Parsing issue, no exit weight");
+    log_warn(LD_GENERAL, "Parsing issue, no exit weight");
   }
   *alt_weight_e = atoi(token);
   return true;
@@ -2263,9 +2263,13 @@ networkstatus_set_current_consensus(const char *consensus,
         !weight_parsed) {
       log_warn(LD_GENERAL, "Parsing alternative weights");
       weight_parsed = 1;
-      parse_alternative_weights("alternative_weights");
       if (get_options()->ClientUseCLAPSDeNASA) {
-        parse_alternative_denasa_ge_weights("alternative_weights_denasa_ge");
+        parse_alternative_weights("alternative_weights_g");
+        log_warn(LD_GENERAL, "Parsed alternative_weights_g");
+        parse_alternative_denasa_ge_weights("alternative_weights_ge");
+      }
+      else {
+        parse_alternative_weights("alternative_weights");
       }
     }
 

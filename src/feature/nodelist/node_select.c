@@ -639,7 +639,8 @@ compute_alternative_bandwidths(const smartlist_t *sl,
 
   if (smartlist_len(sl) == 0) {
     log_warn(LD_CIRC,
-             "Empty routerlist passed in to consensus weight node ");
+             "Empty routerlist passed in to consensus weight node for rule %s",
+             bandwidth_weight_rule_to_string(rule));
     return -1;
   }
 
@@ -688,8 +689,9 @@ compute_alternative_bandwidths(const smartlist_t *sl,
     }
     else if (rule == WEIGHT_FOR_EXIT) {
       if (get_options()->ClientUseCLAPSDeNASA) {
-        char *primaguardnick = get_primguard_nickname(get_guard_selection_info());
-        uint32_t* thisnode_weight =  (uint32_t*) strmap_get(node->weight_when_guard_is, primaguardnick);
+        char *primguardnick = get_primguard_nickname(get_guard_selection_info());
+        uint32_t* thisnode_weight =  (uint32_t*) strmap_get(node->weight_when_guard_is, primguardnick);
+        //log_warn(LD_GENERAL, "Picking weight %d, associated to guard %s", *thisnode_weight, primguardnick);
         weights[node_sl_idx] = kb_to_bytes(*thisnode_weight);
       }
       else
