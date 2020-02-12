@@ -2263,7 +2263,7 @@ networkstatus_set_current_consensus(const char *consensus,
         !weight_parsed) {
       log_warn(LD_GENERAL, "Parsing alternative weights");
       weight_parsed = 1;
-      if (get_options()->ClientUseCLAPSDeNASA) {
+      if (get_options()->ClientUseCLAPSDeNASA || get_options()->ClientUseDenasa) {
         parse_alternative_weights("alternative_weights_g");
         log_warn(LD_GENERAL, "Parsed alternative_weights_g");
         parse_alternative_denasa_ge_weights("alternative_weights_ge");

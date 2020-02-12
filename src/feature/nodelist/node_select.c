@@ -506,15 +506,8 @@ smartlist_choose_node_as_denasa(const smartlist_t *sl,
                                 bandwidth_weight_rule_t rule)
 {
   
-  if (get_options()->ClientUseDenasa) {
-
-    /** do we do e-select? */
-    if (rule != WEIGHT_FOR_GUARD && rule != WEIGHT_FOR_MID) {
-      return smartlist_choose_node_by_bandwidth_weights(sl, rule);
-    }
-  }
   /** We do GE-select */
-  else if (get_options()->ClientUseCLAPSDeNASA) {
+  if (get_options()->ClientUseCLAPSDeNASA || get_options()->ClientUseDenasa) {
     double *bandwidths_dbl = NULL;
     uint64_t *weights_u64 = NULL; 
     if (compute_alternative_bandwidths(sl, rule, &bandwidths_dbl) < 0)
@@ -529,6 +522,9 @@ smartlist_choose_node_as_denasa(const smartlist_t *sl,
     tor_free(bandwidths_dbl);
     tor_free(weights_u64);
     return idx < 0 ? NULL : smartlist_get(sl, idx);
+  }
+  else {
+    log_warn(LD_GENERAL, "Unsupported Denasa option? ");
   }
   return NULL;
 }
@@ -688,11 +684,22 @@ compute_alternative_bandwidths(const smartlist_t *sl,
       }
     }
     else if (rule == WEIGHT_FOR_EXIT) {
-      if (get_options()->ClientUseCLAPSDeNASA) {
+      if (get_options()->ClientUseCLAPSDeNASA || get_options()->ClientUseDenasa) {
         char *primguardnick = get_primguard_nickname(get_guard_selection_info());
-        uint32_t* thisnode_weight =  (uint32_t*) strmap_get(node->weight_when_guard_is, primguardnick);
+        if (!node->weight_when_guard_is) {
+          log_warn(LD_GENERAL, "What, the map isn't initialized for node %s", node_describe(node)); 
+        }
+        if (!primguardnick) {
+          log_warn(LD_GENERAL, "What, get_primguard_nickame returned NULL?");
+        }
+        if (node->weight_when_guard_is && primguardnick) {
+          uint32_t* thisnode_weight =  (uint32_t*) strmap_get(node->weight_when_guard_is, primguardnick);
         //log_warn(LD_GENERAL, "Picking weight %d, associated to guard %s", *thisnode_weight, primguardnick);
-        weights[node_sl_idx] = kb_to_bytes(*thisnode_weight);
+          weights[node_sl_idx] = kb_to_bytes(*thisnode_weight);
+        }
+        else {
+          weights[node_sl_idx] = kb_to_bytes(node->rs->bandwidth_kb);
+        }
       }
       else
         weights[node_sl_idx] = kb_to_bytes(node->alternative_weight_e);
